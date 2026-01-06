@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coupon Generator</title>
+
+<style>
+    body {
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: linear-gradient(135deg, #56ab2f, #a8e063);
+        font-family: Arial, sans-serif;
+    }
+
+    .card {
+        background: white;
+        padding: 30px 40px;
+        border-radius: 16px;
+        text-align: center;
+        width: 320px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+    }
+
+    h1 {
+        margin-bottom: 15px;
+        color: #2e7d32;
+    }
+
+    button {
+        padding: 12px 20px;
+        font-size: 16px;
+        border: none;
+        border-radius: 8px;
+        background: #2e7d32;
+        color: white;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background: #1b5e20;
+    }
+
+    .coupon {
+        margin-top: 20px;
+        font-size: 26px;
+        font-weight: bold;
+        letter-spacing: 3px;
+        color: #333;
+    }
+
+    .note {
+        margin-top: 10px;
+        font-size: 13px;
+        color: #777;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="card">
+    <h1>🌱 Eco Reward</h1>
+    <button onclick="generateCoupon()">Generate Coupon</button>
+    <div class="coupon" id="coupon"></div>
+    <div class="note" id="singleNote">Single-use coupon</div>
+    <div class="note" id="screenshotNote" style="display:none">Take a screenshot of this coupon to redeem in-store.</div>
+</div>
+
+<script>
+    // global timeout handle for current page session
+    let expiryTimeout = null;
+
+    function scheduleExpiry(expireAt) {
+        // clear previous timeout
+        if (expiryTimeout) clearTimeout(expiryTimeout);
+        const ms = expireAt - Date.now();
+        if (ms > 0) {
+            expiryTimeout = setTimeout(() => {
+                localStorage.removeItem("activeCoupon");
+                localStorage.removeItem("activeCouponExpires");
+                // hide coupon in UI when expired while page is open
+                const couponEl = document.getElementById("coupon");
+                if (couponEl) couponEl.innerText = "";
+                const shot = document.getElementById("screenshotNote");
+                if (shot) shot.style.display = 'none';
+            }, ms);
+        }
+    }
+
+    function generateCoupon() {
+        let usedCoupons = JSON.parse(localStorage.getItem("coupons")) || [];
+        let active = localStorage.getItem("activeCoupon");
+        let expireAt = parseInt(localStorage.getItem("activeCouponExpires") || "0", 10);
+
+        // If an active coupon exists and is not expired, show it and do not generate another
+        if (active && expireAt > Date.now()) {
+            document.getElementById("coupon").innerText = active;
+            document.getElementById("screenshotNote").style.display = 'block';
+            return;
+        }
+
+        // If expired, remove it so a new one can be generated
+        if (active && expireAt <= Date.now()) {
+            localStorage.removeItem("activeCoupon");
+            localStorage.removeItem("activeCouponExpires");
+            active = null;
+        }
+
+        let coupon;
+        do {
+            coupon = createCode();
+        } while (usedCoupons.includes(coupon));
+
+        usedCoupons.push(coupon);
+        localStorage.setItem("coupons", JSON.stringify(usedCoupons));
+
+        const expiresInMs = 0.5 * 60 * 1000; // 30 seconds
+        const expiresAt = Date.now() + expiresInMs;
+        localStorage.setItem("activeCoupon", coupon);
+        localStorage.setItem("activeCouponExpires", String(expiresAt));
+
+        document.getElementById("coupon").innerText = coupon;
+        document.getElementById("screenshotNote").style.display = 'block';
+
+        // schedule removal when coupon expires
+        scheduleExpiry(expiresAt);
+    }
+
+    // On load, if there's a non-expired active coupon, keep it in storage but do not display until user clicks Generate
+    window.addEventListener('DOMContentLoaded', () => {
+        const active = localStorage.getItem("activeCoupon");
+        const expireAt = parseInt(localStorage.getItem("activeCouponExpires") || "0", 10);
+        if (active && expireAt > Date.now()) {
+            // schedule expiry so it clears automatically
+            scheduleExpiry(expireAt);
+        } else {
+            // expired or none -- clean up
+            localStorage.removeItem("activeCoupon");
+            localStorage.removeItem("activeCouponExpires");
+        }
+    });
+
+    function createCode() {
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        let code = "";
+        for (let i = 0; i < 8; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return code;
+    }
+</script>
+
+</body>
+</html>
