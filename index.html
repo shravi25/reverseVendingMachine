@@ -1,158 +1,150 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Coupon Generator</title>
+  <meta charset="UTF-8" />
+  <title>Green Reward</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<style>
+  <style>
     body {
-        margin: 0;
-        height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background: linear-gradient(135deg, #56ab2f, #a8e063);
-        font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background: linear-gradient(135deg, #2ecc71, #27ae60);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .card {
-        background: white;
-        padding: 30px 40px;
-        border-radius: 16px;
-        text-align: center;
-        width: 320px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+      background: #ffffff;
+      padding: 30px 35px;
+      width: 320px;
+      border-radius: 16px;
+      text-align: center;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+      animation: fadeIn 0.8s ease-in-out;
     }
 
-    h1 {
-        margin-bottom: 15px;
-        color: #2e7d32;
+    .leaf {
+      font-size: 40px;
+      margin-bottom: 10px;
     }
 
-    button {
-        padding: 12px 20px;
-        font-size: 16px;
-        border: none;
-        border-radius: 8px;
-        background: #2e7d32;
-        color: white;
-        cursor: pointer;
+    h2 {
+      margin: 10px 0;
+      color: #2c3e50;
     }
 
-    button:hover {
-        background: #1b5e20;
+    .subtitle {
+      font-size: 14px;
+      color: #7f8c8d;
+      margin-bottom: 20px;
     }
 
-    .coupon {
-        margin-top: 20px;
-        font-size: 26px;
-        font-weight: bold;
-        letter-spacing: 3px;
-        color: #333;
+    .coupon-box {
+      background: #f4fef7;
+      border: 2px dashed #27ae60;
+      padding: 15px;
+      border-radius: 10px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #27ae60;
+      letter-spacing: 1px;
     }
 
-    .note {
-        margin-top: 10px;
-        font-size: 13px;
-        color: #777;
+    .offer {
+      margin-top: 12px;
+      font-size: 14px;
+      color: #16a085;
+      font-weight: 600;
     }
-</style>
+
+    footer {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #95a5a6;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(15px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
 </head>
 
 <body>
+  <div class="card">
+    <div class="leaf">🌱</div>
+    <h2>Green Reward</h2>
+    <p class="subtitle">Thank you for choosing sustainability</p>
 
-<div class="card">
-    <h1>🌱 Eco Reward</h1>
-    <button onclick="generateCoupon()">Generate Coupon</button>
-    <div class="coupon" id="coupon"></div>
-    <div class="note" id="singleNote">Single-use coupon</div>
-    <div class="note" id="screenshotNote" style="display:none">Take a screenshot of this coupon to redeem in-store.</div>
-</div>
+    <div class="coupon-box" id="coupon">Loading...</div>
 
-<script>
-    // global timeout handle for current page session
-    let expiryTimeout = null;
+    <p class="offer" id="offerText">Loading offer...</p>
 
-    function scheduleExpiry(expireAt) {
-        // clear previous timeout
-        if (expiryTimeout) clearTimeout(expiryTimeout);
-        const ms = expireAt - Date.now();
-        if (ms > 0) {
-            expiryTimeout = setTimeout(() => {
-                localStorage.removeItem("activeCoupon");
-                localStorage.removeItem("activeCouponExpires");
-                // hide coupon in UI when expired while page is open
-                const couponEl = document.getElementById("coupon");
-                if (couponEl) couponEl.innerText = "";
-                const shot = document.getElementById("screenshotNote");
-                if (shot) shot.style.display = 'none';
-            }, ms);
-        }
-    }
+    <footer>Show this coupon at the counter</footer>
+  </div>
 
-    function generateCoupon() {
-        let usedCoupons = JSON.parse(localStorage.getItem("coupons")) || [];
-        let active = localStorage.getItem("activeCoupon");
-        let expireAt = parseInt(localStorage.getItem("activeCouponExpires") || "0", 10);
+  <script>
+    const COUPON_KEY = "uniqueCouponData";
 
-        // If an active coupon exists and is not expired, show it and do not generate another
-        if (active && expireAt > Date.now()) {
-            document.getElementById("coupon").innerText = active;
-            document.getElementById("screenshotNote").style.display = 'block';
-            return;
-        }
-
-        // If expired, remove it so a new one can be generated
-        if (active && expireAt <= Date.now()) {
-            localStorage.removeItem("activeCoupon");
-            localStorage.removeItem("activeCouponExpires");
-            active = null;
-        }
-
-        let coupon;
-        do {
-            coupon = createCode();
-        } while (usedCoupons.includes(coupon));
-
-        usedCoupons.push(coupon);
-        localStorage.setItem("coupons", JSON.stringify(usedCoupons));
-
-        const expiresInMs = 0.5 * 60 * 1000; // 30 seconds
-        const expiresAt = Date.now() + expiresInMs;
-        localStorage.setItem("activeCoupon", coupon);
-        localStorage.setItem("activeCouponExpires", String(expiresAt));
-
-        document.getElementById("coupon").innerText = coupon;
-        document.getElementById("screenshotNote").style.display = 'block';
-
-        // schedule removal when coupon expires
-        scheduleExpiry(expiresAt);
-    }
-
-    // On load, if there's a non-expired active coupon, keep it in storage but do not display until user clicks Generate
-    window.addEventListener('DOMContentLoaded', () => {
-        const active = localStorage.getItem("activeCoupon");
-        const expireAt = parseInt(localStorage.getItem("activeCouponExpires") || "0", 10);
-        if (active && expireAt > Date.now()) {
-            // schedule expiry so it clears automatically
-            scheduleExpiry(expireAt);
-        } else {
-            // expired or none -- clean up
-            localStorage.removeItem("activeCoupon");
-            localStorage.removeItem("activeCouponExpires");
-        }
-    });
+    const discountMessages = [
+      "10% OFF on your next eco-friendly purchase",
+      "Flat ₹100 OFF on sustainable products",
+      "Buy 1 Get 1 FREE on green essentials",
+      "15% OFF on reusable & zero-waste items",
+      "₹200 OFF on orders above ₹999",
+      "Free eco-gift with your next purchase",
+      "12% OFF on organic and natural products",
+      "Special Green Deal: Save 20% today"
+    ];
 
     function createCode() {
-        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        let code = "";
-        for (let i = 0; i < 8; i++) {
-            code += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return code;
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      let code = "";
+      for (let i = 0; i < 8; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
     }
-</script>
+
+    function getRandomMessage() {
+      const index = Math.floor(Math.random() * discountMessages.length);
+      return discountMessages[index];
+    }
+
+    function getOrCreateCoupon() {
+      let storedData = localStorage.getItem(COUPON_KEY);
+
+      let couponData;
+
+      // If coupon does not exist, create once
+      if (!storedData) {
+        couponData = {
+          code: createCode(),
+          message: getRandomMessage()
+        };
+        localStorage.setItem(COUPON_KEY, JSON.stringify(couponData));
+      } else {
+        couponData = JSON.parse(storedData);
+      }
+
+      // Display coupon and message
+      document.getElementById("coupon").innerText = couponData.code;
+      document.getElementById("offerText").innerText = couponData.message;
+    }
+
+    // Auto-generate on page load
+    window.addEventListener("DOMContentLoaded", getOrCreateCoupon);
+  </script>
 
 </body>
 </html>
