@@ -94,6 +94,19 @@
   </div>
 
   <script>
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+    const VALID_TOKEN = "ABC123QR";
+
+    if (token !== VALID_TOKEN) {
+      document.body.innerHTML = `
+        <div style="text-align:center; margin-top:100px;">
+          <h1>Access Denied ❌</h1>
+          <p>Please scan the official QR code to access this site.</p>
+        </div>
+      `;
+      throw new Error("QR token not provided or invalid.");
+    }
     const COUPON_KEY = "uniqueCouponData";
 
     const discountMessages = [
@@ -148,3 +161,4 @@
 
 </body>
 </html>
+
