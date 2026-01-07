@@ -5,6 +5,9 @@
   <title>Green Reward</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  <!-- Barcode Library -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
   <style>
     body {
       margin: 0;
@@ -48,10 +51,6 @@
       border: 2px dashed #27ae60;
       padding: 15px;
       border-radius: 10px;
-      font-size: 20px;
-      font-weight: bold;
-      color: #27ae60;
-      letter-spacing: 1px;
     }
 
     .offer {
@@ -86,11 +85,14 @@
     <h2>Green Reward</h2>
     <p class="subtitle">Thank you for choosing sustainability</p>
 
-    <div class="coupon-box" id="coupon">Loading...</div>
+    <!-- BARCODE CONTAINER -->
+    <div class="coupon-box">
+      <svg id="barcode"></svg>
+    </div>
 
     <p class="offer" id="offerText">Loading offer...</p>
 
-    <footer>Show this coupon at the counter</footer>
+    <footer>Show this barcode at the counter</footer>
   </div>
 
   <script>
@@ -107,6 +109,7 @@
       `;
       throw new Error("QR token not provided or invalid.");
     }
+
     const COUPON_KEY = "uniqueCouponData";
 
     const discountMessages = [
@@ -124,22 +127,19 @@
       const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
       let code = "";
       for (let i = 0; i < 8; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
+        code += chars[Math.floor(Math.random() * chars.length)];
       }
       return code;
     }
 
     function getRandomMessage() {
-      const index = Math.floor(Math.random() * discountMessages.length);
-      return discountMessages[index];
+      return discountMessages[Math.floor(Math.random() * discountMessages.length)];
     }
 
     function getOrCreateCoupon() {
       let storedData = localStorage.getItem(COUPON_KEY);
-
       let couponData;
 
-      // If coupon does not exist, create once
       if (!storedData) {
         couponData = {
           code: createCode(),
@@ -150,15 +150,23 @@
         couponData = JSON.parse(storedData);
       }
 
-      // Display coupon and message
-      document.getElementById("coupon").innerText = couponData.code;
+      // Generate BARCODE instead of showing text
+      JsBarcode("#barcode", couponData.code, {
+        format: "CODE128",
+        lineColor: "#27ae60",
+        width: 2,
+        height: 60,
+        displayValue: true
+      });
+
       document.getElementById("offerText").innerText = couponData.message;
     }
 
-    // Auto-generate on page load
     window.addEventListener("DOMContentLoaded", getOrCreateCoupon);
   </script>
 
 </body>
 </html>
+
+
 
